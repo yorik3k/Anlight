@@ -1,0 +1,124 @@
+# ============================
+# VISUAL STUDIO
+# ============================
+.vs/
+*.sln
+*.suo
+*.user
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.VC.opendb
+*.dbmdl
+*.tmp
+*.tmp_
+*.bak
+*.cache
+*.swp
+*.log
+*.tlog
+*.pdb
+*.idb
+*.ilk
+*.exp
+*.obj
+*.lib
+*.pch
+
+# ============================
+# UNREAL ENGINE - BUILD OUTPUT
+# ============================
+Binaries/
+Intermediate/
+DerivedDataCache/
+Saved/
+Build/
+
+# ============================
+# UNREAL ENGINE - PROJECT FILES
+# ============================
+*.sln
+*.xcodeproj
+*.xcworkspace
+
+# ============================
+# UNREAL ENGINE - TEMPORARY FILES
+# ============================
+*.~*
+.*.swp
+*.tmp
+*.temp
+*.backup
+*.old
+*.orig
+*.rej
+*.patch
+
+# ============================
+# UNREAL ENGINE - LOGS & CACHE
+# ============================
+*.log
+*.logcat
+*.trace
+*.utrace
+*.uasset.meta
+*.umap.meta
+
+# ============================
+# UNREAL ENGINE - LAUNCHER
+# ============================
+*.launcher
+*.upk
+*.pak
+
+# ============================
+# UNREAL ENGINE - AUTOSAVES
+# ============================
+*_Autosave.*
+*_Backup.*
+*_Temp.*
+*_Draft.*
+
+# ============================
+# VISUAL STUDIO CODE
+# ============================
+.vscode/
+*.code-workspace
+
+# ============================
+# RIDER
+# ============================
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ============================
+# WINDOWS
+# ============================
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# ============================
+# MAC
+# ============================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# ============================
+# LINUX
+# ============================
+*~
+.*.swp
+.*.swo
+
+# ============================
+# TEMP FOLDERS
+# ============================
+Temp/
+tmp/
+*.tmp
