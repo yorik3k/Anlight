@@ -1,0 +1,52 @@
+# Visual Studio
+.vs/
+.vscode/
+*.VC.db
+*.opendb
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.swp
+*.swo
+
+# Unreal Engine build artifacts
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+
+# Stupid UE folders
+__ExternalActors__/
+__ExternalObjects__/
+
+# Compiled files
+*.exe
+*.dll
+*.pdb
+*.exp
+*.lib
+*.obj
+*.map
+*.dylib
+*.so
+*.rej
+*.tmp
+*.log
+
+# VS Code / IDEA
+.idea/
+*.code-workspace
+*.code-search
+
+# Crash reports
+Crashes/
+Logs/
+webcache_*
+
+# OS junk
+Thumbs.db
+.DS_Store
+Desktop.ini
