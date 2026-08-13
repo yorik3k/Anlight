@@ -1,7 +1,9 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Character/MainCharacter.h"
+#include "Anlight.h"
 #include "Components/Health/HealthComponent.h"
+#include "Components/Inventory/InventoryComponent.h"
 #include "Components/Stamina/StaminaComponent.h"
 #include "Character/Movement/SprintComponent.h"
 #include "Character/Movement/JumpComponent.h"
@@ -12,6 +14,12 @@
 #include "InputActionValue.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "GameFramework/PlayerController.h"
+#include "InputCoreTypes.h"
+#include "Items/InventoryItemDefinition.h"
+#include "UI/Interaction/InteractionPromptWidget.h"
+#include "UI/Inventory/InventoryWidget.h"
+#include "World/Items/InventoryWorldItem.h"
 
 AMainCharacter::AMainCharacter()
 {
@@ -44,6 +52,12 @@ AMainCharacter::AMainCharacter()
 	StaminaComponent = CreateDefaultSubobject<UStaminaComponent>(TEXT("StaminaComponent"));
 	SprintComponent = CreateDefaultSubobject<USprintComponent>(TEXT("SprintComponent"));
 	JumpComponent = CreateDefaultSubobject<UJumpComponent>(TEXT("JumpComponent"));
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+
+	// Эти классы работают сами по себе и служат запасным вариантом.
+	// В BP_MainCharacter назначаются их Blueprint-версии с игровыми настройками.
+	InventoryWidgetClass = UInventoryWidget::StaticClass();
+	InteractionPromptWidgetClass = UInteractionPromptWidget::StaticClass();
 }
 
 void AMainCharacter::BeginPlay()
@@ -66,6 +80,9 @@ void AMainCharacter::BeginPlay()
 	{
 		HealthComponent->OnHealthDepleted.AddDynamic(this, &AMainCharacter::OnHealthDepletedHandler);
 	}
+
+	InitializeInventoryInterface();
+	SpawnInventoryTestItem();
 }
 
 void AMainCharacter::Tick(float DeltaTime)
@@ -91,6 +108,8 @@ void AMainCharacter::Tick(float DeltaTime)
 			bIsDying = false;
 		}
 	}
+
+	UpdateInventoryFocus();
 }
 
 void AMainCharacter::Move(const FInputActionValue& Value)
@@ -198,6 +217,205 @@ void AMainCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &AMainCharacter::StartSprint);
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &AMainCharacter::StopSprint);
 		}
+
+		if (InventoryAction)
+		{
+			EnhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Started, this, &AMainCharacter::ToggleInventory);
+		}
+
+		if (InteractAction)
+		{
+			EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AMainCharacter::PickUpFocusedItem);
+		}
+	}
+
+	// Если действия ещё не назначены в Blueprint, клавиши всё равно будут работать.
+	if (!InventoryAction)
+	{
+		PlayerInputComponent->BindKey(EKeys::I, IE_Pressed, this, &AMainCharacter::ToggleInventory);
+	}
+	if (!InteractAction)
+	{
+		PlayerInputComponent->BindKey(EKeys::E, IE_Pressed, this, &AMainCharacter::PickUpFocusedItem);
+	}
+}
+
+void AMainCharacter::InitializeInventoryInterface()
+{
+	// Интерфейс нужен только локальному игроку. Для чужих персонажей в сетевой
+	// игре отдельные копии окна создавать не следует.
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (!PlayerController || !PlayerController->IsLocalController())
+	{
+		return;
+	}
+
+	if (InventoryWidgetClass)
+	{
+		// Окно получает ссылку на компонент, но не хранит собственную копию предметов.
+		InventoryWidget = CreateWidget<UInventoryWidget>(PlayerController, InventoryWidgetClass);
+		if (InventoryWidget)
+		{
+			InventoryWidget->InitializeInventory(InventoryComponent);
+			InventoryWidget->OnInventoryClosed.AddUniqueDynamic(this, &AMainCharacter::HandleInventoryWidgetClosed);
+			InventoryWidget->AddToViewport(10);
+		}
+	}
+
+	if (InteractionPromptWidgetClass)
+	{
+		InteractionPromptWidget = CreateWidget<UInteractionPromptWidget>(PlayerController, InteractionPromptWidgetClass);
+		if (InteractionPromptWidget)
+		{
+			InteractionPromptWidget->AddToViewport(20);
+		}
+	}
+
+	SetInventoryVisible(false);
+}
+
+void AMainCharacter::ToggleInventory()
+{
+	// Мёртвый персонаж не может открыть или закрыть рюкзак.
+	if (!bIsDead && InventoryWidget)
+	{
+		SetInventoryVisible(!bInventoryVisible);
+	}
+}
+
+void AMainCharacter::SetInventoryVisible(const bool bVisible)
+{
+	const bool bVisibilityChanged = bInventoryVisible != bVisible;
+	bInventoryVisible = bVisible;
+
+	if (InventoryWidget)
+	{
+		InventoryWidget->SetVisibility(bVisible ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
+
+	if (bVisible)
+	{
+		// При открытии убираем подсказку, чтобы два интерфейса не накладывались.
+		ClearInventoryFocus();
+	}
+
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		PlayerController->SetShowMouseCursor(bVisible);
+		if (bVisible)
+		{
+			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PlayerController->SetInputMode(InputMode);
+		}
+		else
+		{
+			PlayerController->SetInputMode(FInputModeGameOnly());
+		}
+
+		// Пока открыт рюкзак, персонаж не ходит и камера не крутится.
+		if (bVisibilityChanged)
+		{
+			PlayerController->SetIgnoreMoveInput(bVisible);
+			PlayerController->SetIgnoreLookInput(bVisible);
+		}
+	}
+}
+
+void AMainCharacter::UpdateInventoryFocus()
+{
+	// Проверка предметов не нужна во время смерти или работы с открытым рюкзаком.
+	if (!FP_Camera || bIsDead || bInventoryVisible)
+	{
+		ClearInventoryFocus();
+		return;
+	}
+
+	// Небольшая сфера вместо тонкого луча упрощает наведение на маленькие предметы.
+	const FVector Start = FP_Camera->GetComponentLocation();
+	const FVector End = Start + FP_Camera->GetForwardVector() * InventoryInteractionDistance;
+	FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(MainCharacterInventoryInteraction), false, this);
+	FHitResult Hit;
+	GetWorld()->SweepSingleByChannel(
+		Hit,
+		Start,
+		End,
+		FQuat::Identity,
+		ECC_Visibility,
+		FCollisionShape::MakeSphere(18.0f),
+		QueryParams);
+
+	AInventoryWorldItem* HitItem = Cast<AInventoryWorldItem>(Hit.GetActor());
+	if (!IsValid(HitItem) || !HitItem->ItemStack.IsValid())
+	{
+		ClearInventoryFocus();
+		return;
+	}
+
+	FocusedInventoryItem = HitItem;
+	if (InteractionPromptWidget)
+	{
+		InteractionPromptWidget->ShowItem(HitItem->ItemStack);
+	}
+}
+
+void AMainCharacter::PickUpFocusedItem()
+{
+	// Сам перенос количества выполняют предмет мира и InventoryComponent.
+	if (bIsDead || bInventoryVisible || !IsValid(FocusedInventoryItem) || !InventoryComponent)
+	{
+		return;
+	}
+
+	FocusedInventoryItem->PickUp(InventoryComponent);
+	ClearInventoryFocus();
+}
+
+void AMainCharacter::ClearInventoryFocus()
+{
+	FocusedInventoryItem = nullptr;
+	if (InteractionPromptWidget)
+	{
+		InteractionPromptWidget->HidePrompt();
+	}
+}
+
+void AMainCharacter::HandleInventoryWidgetClosed()
+{
+	SetInventoryVisible(false);
+}
+
+void AMainCharacter::SpawnInventoryTestItem()
+{
+	// Эта функция существует только для текущей проверки основной карты.
+	// Её можно полностью отключить одной галочкой в BP_MainCharacter.
+	if (!bSpawnInventoryTestItem || !InventoryTestItemDefinition || !FP_Camera || !GetWorld())
+	{
+		return;
+	}
+
+	// Предпочитаем Blueprint из Data Asset, но умеем работать и без него.
+	TSubclassOf<AInventoryWorldItem> PickupClass = InventoryTestItemDefinition->WorldItemClass;
+	if (!PickupClass)
+	{
+		PickupClass = AInventoryWorldItem::StaticClass();
+	}
+
+	const FVector SpawnLocation = FP_Camera->GetComponentLocation()
+		+ FP_Camera->GetForwardVector() * 220.0f
+		+ FP_Camera->GetRightVector() * 70.0f;
+	const FTransform SpawnTransform(FP_Camera->GetComponentRotation(), SpawnLocation);
+	if (AInventoryWorldItem* TestItem = GetWorld()->SpawnActorDeferred<AInventoryWorldItem>(
+		PickupClass,
+		SpawnTransform,
+		nullptr,
+		this,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn))
+	{
+		TestItem->InitializeItemDefinition(InventoryTestItemDefinition, 2);
+		TestItem->FinishSpawning(SpawnTransform);
+		UE_LOG(LogAnlight, Display, TEXT("Spawned inventory test item: %s"),
+			*InventoryTestItemDefinition->ItemId.ToString());
 	}
 }
 
@@ -211,6 +429,12 @@ void AMainCharacter::OnHealthDepletedHandler()
 void AMainCharacter::Die()
 {
 	if (bIsDead) return;
+
+	if (bInventoryVisible)
+	{
+		SetInventoryVisible(false);
+	}
+	ClearInventoryFocus();
 
 	bIsDead = true;
 	bIsDying = true;

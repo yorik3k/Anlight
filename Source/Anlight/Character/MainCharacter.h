@@ -15,6 +15,11 @@ class UHealthComponent;
 class UStaminaComponent;
 class USprintComponent;
 class UJumpComponent;
+class UInventoryComponent;
+class UInventoryWidget;
+class UInteractionPromptWidget;
+class UInventoryItemDefinition;
+class AInventoryWorldItem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathSignature);  // ← Добавляем
 
@@ -61,6 +66,36 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	UJumpComponent* JumpComponent;
 
+	// ===== ИНВЕНТАРЬ =====
+	// Сам компонент хранит предметы и стаки. Его можно увидеть в Blueprint персонажа.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	UInventoryComponent* InventoryComponent;
+
+	// Классы интерфейса можно заменить в Class Defaults у BP_MainCharacter.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Interface")
+	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Interface")
+	TSubclassOf<UInteractionPromptWidget> InteractionPromptWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Interface")
+	TObjectPtr<UInventoryWidget> InventoryWidget;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Interface")
+	TObjectPtr<UInteractionPromptWidget> InteractionPromptWidget;
+
+	// Как далеко персонаж видит предмет для подбора.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory|Interaction", meta = (ClampMin = "50.0"))
+	float InventoryInteractionDistance = 350.0f;
+
+	// Временно создаёт предмет перед игроком на обычной карте.
+	// После проверки это можно выключить в BP_MainCharacter без изменения кода.
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Test")
+	bool bSpawnInventoryTestItem = false;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Test")
+	TObjectPtr<UInventoryItemDefinition> InventoryTestItemDefinition;
+
 	// ===== ВВОД =====
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputMappingContext* DefaultMappingContext;
@@ -77,8 +112,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
 	UInputAction* SprintAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* InventoryAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+	UInputAction* InteractAction;
+
 	void StartSprint();
 	void StopSprint();
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory")
+	void ToggleInventory();
+
+	UFUNCTION(BlueprintCallable, Category = "Inventory|Interaction")
+	void PickUpFocusedItem();
 
 	// ===== СМЕРТЬ =====
 
@@ -118,4 +165,18 @@ private:
 	// Привязка к событию смерти из HealthComponent
 	UFUNCTION()
 	void OnHealthDepletedHandler();
+
+	void InitializeInventoryInterface();
+	void SetInventoryVisible(bool bVisible);
+	void UpdateInventoryFocus();
+	void ClearInventoryFocus();
+	void SpawnInventoryTestItem();
+
+	UFUNCTION()
+	void HandleInventoryWidgetClosed();
+
+	UPROPERTY()
+	TObjectPtr<AInventoryWorldItem> FocusedInventoryItem;
+
+	bool bInventoryVisible = false;
 };

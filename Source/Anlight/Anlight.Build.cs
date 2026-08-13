@@ -19,6 +19,7 @@ public class Anlight : ModuleRules
             "GameplayStateTreeModule",
             "UMG",
             "Slate",
+			"SlateCore",
 			// ← Убери пустую строку ""
 		});
 
