@@ -12,6 +12,8 @@ Respect Her, and she will have mercy on you...
 
 **🛠️ Active development**
 
+<img width="512" height="400" alt="dev" src="https://github.com/user-attachments/assets/fb354753-8e65-4a88-871c-ef0b826695f1" />
+
 # 🤝 If you want to help us...
 
 Write to: yorik3k.dev@outlook.com
@@ -21,4 +23,5 @@ Write to: yorik3k.dev@outlook.com
 # License:
 
 **CC BY-NC 4.0**
+
 
