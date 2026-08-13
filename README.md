@@ -1,10 +1,24 @@
-# Anlight
 
-Полное руководство по использованию и C++-коду:
+# 🕯️ Anlight — hardcore survival in the Zone. Fighting is not the answer.
 
-**[Открыть InventoryCodeGuide.md](Docs/InventoryCodeGuide.md)**
+The Zone is unpredictable, and you’re not a hero here at all—just an ordinary “visitor”.
+Respect Her, and she will have mercy on you...
 
-- основной персонаж: `Source/Anlight/Character/MainCharacter.*`;
-- код инвентаря: `Source/Anlight/Components/Inventory`;
-- игровые ресурсы: `Content/InventorySystem`;
-- тестовая карта: `Content/InventoryTest/Lvl_InventoryTest`.
+**Genre:** Hardcore survival simulator with psychological horror elements.
+
+---
+
+# Project status: 
+
+**🛠️ Active development**
+
+# 🤝 If you want to help us...
+
+Write to: yorik3k.dev@outlook.com
+
+---
+
+# License:
+
+**CC BY-NC 4.0**
+
