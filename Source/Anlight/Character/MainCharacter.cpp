@@ -56,8 +56,7 @@ AMainCharacter::AMainCharacter()
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	BuffManager = CreateDefaultSubobject<UBuffManager>(TEXT("BuffManager"));
 
-	// Эти классы работают сами по себе и служат запасным вариантом.
-	// В BP_MainCharacter назначаются их Blueprint-версии с игровыми настройками.
+	
 	InventoryWidgetClass = UInventoryWidget::StaticClass();
 	InteractionPromptWidgetClass = UInteractionPromptWidget::StaticClass();
 }
@@ -77,7 +76,7 @@ void AMainCharacter::BeginPlay()
 		}
 	}
 
-	// Привязываем событие смерти из HealthComponent
+	
 	if (HealthComponent)
 	{
 		HealthComponent->OnHealthDepleted.AddDynamic(this, &AMainCharacter::OnHealthDepletedHandler);
@@ -93,7 +92,7 @@ void AMainCharacter::BeginPlay()
 		{
 			HealthComponent->SetBuffManager(BuffManager);
 		}
-		// StaminaComponent пока не трогаем — там нет SetBuffManager
+		
 	}
 
 	InitializeInventoryInterface();
@@ -129,7 +128,7 @@ void AMainCharacter::Tick(float DeltaTime)
 
 void AMainCharacter::Move(const FInputActionValue& Value)
 {
-	if (bIsDead) return;  // Мёртвый не двигается
+	if (bIsDead) return; 
 
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -154,7 +153,7 @@ void AMainCharacter::Move(const FInputActionValue& Value)
 
 void AMainCharacter::Look(const FInputActionValue& Value)
 {
-	if (bIsDead) return;  // Мёртвый не поворачивается
+	if (bIsDead) return;
 
 	FVector2D LookVector = Value.Get<FVector2D>();
 
@@ -167,7 +166,7 @@ void AMainCharacter::Look(const FInputActionValue& Value)
 
 void AMainCharacter::StartJump()
 {
-	if (bIsDead) return;  // Мёртвый не прыгает
+	if (bIsDead) return;
 
 	if (JumpComponent)
 	{

@@ -91,7 +91,7 @@ void UHealthComponent::StartBleeding(float BleedRate)
         return;
     }
 
-    // Если уже кровоточим — берём большую скорость
+    
     BleedingRate = FMath::Max(BleedingRate, BleedRate);
 
     if (!bBleeding)
