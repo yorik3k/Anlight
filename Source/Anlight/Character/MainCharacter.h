@@ -20,6 +20,7 @@ class UInventoryWidget;
 class UInteractionPromptWidget;
 class UInventoryItemDefinition;
 class AInventoryWorldItem;
+class UBuffManager;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathSignature);  // ← Добавляем
 
@@ -140,6 +141,10 @@ public:
 	// Вызов смерти
 	UFUNCTION(BlueprintCallable, Category = "Health")
 	void Die();
+
+	// Buff Manager
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+	UBuffManager* BuffManager;
 
 protected:
 	// Параметры анимации смерти

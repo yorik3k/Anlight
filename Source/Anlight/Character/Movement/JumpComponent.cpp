@@ -13,73 +13,73 @@ UJumpComponent::UJumpComponent()
 void UJumpComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	// owner check
 	OwnerCharacter = Cast<ACharacter>(GetOwner());
 	if (!OwnerCharacter)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("JumpComponent: Owner is not a Character!"));
 		return;
 	}
-
+	// stamina component check
 	StaminaComponent = OwnerCharacter->FindComponentByClass<UStaminaComponent>();
 	if (!StaminaComponent)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("JumpComponent: StaminaComponent not found on Owner!"));
 	}
 }
-
+// can jump FLAG
 bool UJumpComponent::CanJump() const
 {
 	if (!StaminaComponent || !OwnerCharacter)
 	{
 		return false;
 	}
-
-	// Проверяем, может ли персонаж физически прыгнуть (на земле, не в прыжке)
+	// Проверка возможности прыгнуть (перс на земле, не в прыжке)
 	if (!OwnerCharacter->CanJump())
 	{
 		return false;
 	}
 
-	// Проверяем стамину, используя НАШУ цену прыжка
+	// Проверка стамины учитывая расход
 	float CurrentStamina = StaminaComponent->GetStamina();
 	return CurrentStamina >= JumpCost;
 }
-
+// Функция выполнения прыжка
 void UJumpComponent::StartJump()
 {
+	// проверка владельца и класса выносливости
 	if (!OwnerCharacter || !StaminaComponent)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("JumpComponent: Missing OwnerCharacter or StaminaComponent!"));
 		return;
 	}
 
-	// Получаем текущую стамину
+	// Получение текущей стамины
 	float CurrentStamina = StaminaComponent->GetStamina();
 
-	// Проверяем стамину с НАШЕЙ ценой
+	// Проверка стамины с расход (задан .h)
 	if (CurrentStamina < JumpCost)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Not enough stamina to jump! Have: %.1f, Need: %.1f"), CurrentStamina, JumpCost);
 		return;
 	}
 
-	// Проверяем физическую возможность прыжка
+	// Проверка физической возможности прыгнуть
 	if (!OwnerCharacter->CanJump())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cannot jump - not on ground or already jumping"));
 		return;
 	}
 
-	// Тратим стамину
+	// Рассход стамины
 	StaminaComponent->UpdateStamina(-JumpCost);
 
-	// Выполняем прыжок
+	// Выполнение прыжка
 	OwnerCharacter->Jump();
 
-	UE_LOG(LogTemp, Log, TEXT("Jump executed! Stamina cost: %.1f, Remaining: %.1f"), JumpCost, StaminaComponent->GetStamina());
+	
 }
-
+// функция остановки прыжка
 void UJumpComponent::StopJump()
 {
 	if (!OwnerCharacter) return;

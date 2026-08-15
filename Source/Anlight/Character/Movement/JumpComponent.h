@@ -23,21 +23,19 @@ protected:
 public:
 	// ===== НАСТРОЙКИ =====
 
-	// Стоимость прыжка (тратится из стамины)
+	// Рассход прыжка
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Jump|Settings")
 	float JumpCost = 15.0f;
 
 	// ===== МЕТОДЫ =====
 
-	// Выполнить прыжок (с проверкой стамины)
+	// Выполнить прыжок с проверкой стамины
 	UFUNCTION(BlueprintCallable, Category = "Jump")
 	void StartJump();
-
-	// Остановить прыжок (вызывается при отпускании)
+	// Остановить прыжок - вызывается при отпускании
 	UFUNCTION(BlueprintCallable, Category = "Jump")
 	void StopJump();
-
-	// Можно ли прыгнуть сейчас
+	// Проверка на возможность прыгнуть
 	UFUNCTION(BlueprintCallable, Category = "Jump")
 	bool CanJump() const;
 

@@ -5,6 +5,7 @@
 #include "Components/Health/HealthComponent.h"
 #include "Components/Inventory/InventoryComponent.h"
 #include "Components/Stamina/StaminaComponent.h"
+#include "Components/BuffManager/BuffManager.h"
 #include "Character/Movement/SprintComponent.h"
 #include "Character/Movement/JumpComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -53,6 +54,7 @@ AMainCharacter::AMainCharacter()
 	SprintComponent = CreateDefaultSubobject<USprintComponent>(TEXT("SprintComponent"));
 	JumpComponent = CreateDefaultSubobject<UJumpComponent>(TEXT("JumpComponent"));
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	BuffManager = CreateDefaultSubobject<UBuffManager>(TEXT("BuffManager"));
 
 	// Эти классы работают сами по себе и служат запасным вариантом.
 	// В BP_MainCharacter назначаются их Blueprint-версии с игровыми настройками.
@@ -79,6 +81,15 @@ void AMainCharacter::BeginPlay()
 	if (HealthComponent)
 	{
 		HealthComponent->OnHealthDepleted.AddDynamic(this, &AMainCharacter::OnHealthDepletedHandler);
+	}
+
+	if (BuffManager)
+	{
+		if (HealthComponent)
+		{
+			HealthComponent->SetBuffManager(BuffManager);
+		}
+		// StaminaComponent пока не трогаем — там нет SetBuffManager
 	}
 
 	InitializeInventoryInterface();
