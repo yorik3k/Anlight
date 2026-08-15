@@ -18,7 +18,7 @@ void UStaminaComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    float MaxStamina = GetMaxStamina(); // ← Актуальный максимум
+    float MaxStamina = GetMaxStamina();
 
     // ===== РЕГЕНЕРАЦИЯ =====
     if (bIsSprinting)
