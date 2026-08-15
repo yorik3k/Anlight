@@ -82,6 +82,10 @@ void AMainCharacter::BeginPlay()
 	{
 		HealthComponent->OnHealthDepleted.AddDynamic(this, &AMainCharacter::OnHealthDepletedHandler);
 	}
+	if (StaminaComponent)
+	{
+		StaminaComponent->SetBuffManager(BuffManager);
+	}
 
 	if (BuffManager)
 	{
