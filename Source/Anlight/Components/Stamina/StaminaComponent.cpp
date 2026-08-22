@@ -1,5 +1,5 @@
 ﻿#include "Components/Stamina/StaminaComponent.h"
-#include "Components/BuffManager/BuffManager.h"
+#include "Components/EffectManager/EffectManager.h"  // <-- ИЗМЕНЕНО
 
 UStaminaComponent::UStaminaComponent()
 {
@@ -20,7 +20,6 @@ void UStaminaComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
     float MaxStamina = GetMaxStamina();
 
-    // ===== РЕГЕНЕРАЦИЯ =====
     if (bIsSprinting)
     {
         RegenDelayTimer = 0.0f;
@@ -37,19 +36,27 @@ void UStaminaComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
     if (RegenDelayTimer >= StaminaRegenDelay)
     {
-        float NewStamina = Stamina + StaminaRegenRate * DeltaTime;
+        float RegenMultiplier = 1.0f;
+        if (EffectManager)
+        {
+            RegenMultiplier += EffectManager->GetTotalModifier(EAnlightStat::StaminaRegenMultiplier);
+        }
+        RegenMultiplier = FMath::Max(0.0f, RegenMultiplier);
+
+        float NewStamina = Stamina + (StaminaRegenRate * RegenMultiplier) * DeltaTime;
         Stamina = FMath::Min(NewStamina, MaxStamina);
         UpdateStaminaUI();
     }
 }
+
 float UStaminaComponent::GetMaxStamina() const
 {
-    float Modifier = 0.0f;
-    if (BuffManager)
+    float Multiplier = 1.0f;
+    if (EffectManager)
     {
-        Modifier = BuffManager->GetTotalModifier(EAnlightStat::Stamina);
+        Multiplier += EffectManager->GetTotalModifier(EAnlightStat::StaminaMultiplier);
     }
-    return FMath::Max(1.0f, BaseMaxStamina + Modifier);
+    return FMath::Max(1.0f, BaseMaxStamina * Multiplier);
 }
 
 float UStaminaComponent::GetStaminaPercent() const
@@ -96,9 +103,9 @@ void UStaminaComponent::SetIsSprinting(bool bInSprinting)
     }
 }
 
-void UStaminaComponent::SetBuffManager(UBuffManager* InBuffManager)
+void UStaminaComponent::SetEffectManager(UEffectManager* InEffectManager)  // <-- ИЗМЕНЕНО
 {
-    BuffManager = InBuffManager;
+    EffectManager = InEffectManager;  // <-- ИЗМЕНЕНО
     RecalculateMaxStamina();
 }
 

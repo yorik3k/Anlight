@@ -10,9 +10,12 @@ class UInventoryComponent;
 class UButton;
 class UImage;
 class UTextBlock;
-class UUniformGridPanel;
+class UCanvasPanel;  
+class UNutritionComponent;
+
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryWidgetClosed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnItemUsed, FName, ItemId);
 
 // Общее окно инвентаря для основного и тестового персонажей.
 // Оно только показывает данные и передаёт команды настоящему InventoryComponent.
@@ -29,41 +32,72 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Inventory")
 	FOnInventoryWidgetClosed OnInventoryClosed;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory UI|Text")
-	FText HeaderTitle = FText::FromString(TEXT("ИНВЕНТАРЬ пока что красивый"));
+	// ===== BindWidget — привязка к WBP =====
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UCanvasPanel> SlotGrid;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory UI|Text")
-	FText HeaderSubtitle = FText::FromString(TEXT("ТЕСТОВЫЙ ПЕРСОНАЖ  •  РЮКЗАК"));
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UTextBlock> Capacity;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory UI|Text")
-	FText BackpackTitle = FText::FromString(TEXT("РЮКЗАК"));
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UTextBlock> Name;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory UI|Text")
-	FText GridHint = FText::FromString(TEXT("ЛКМ — выбрать предмет    •    I — закрыть инвентарь"));
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UTextBlock> ammount;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory UI|Text")
-	FText DropOneLabel = FText::FromString(TEXT("ВЫБРОСИТЬ 1"));
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UTextBlock> description;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory UI|Text")
-	FText DropAllLabel = FText::FromString(TEXT("ВЫБРОСИТЬ ВСЁ"));
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UImage> icon;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory UI|Style")
-	FLinearColor AccentColor = FLinearColor(0.68f, 0.76f, 0.35f, 1.0f);
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UButton> Use;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UButton> Drop_one;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UButton> Drop_all;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UButton> close;
+
+	// weapon slots
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UButton> WeapSlingButt;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UButton> WeapSecondButt;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UImage> WeapSlingImage;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UImage> WeapSecondImage;
+
+	UPROPERTY(BlueprintAssignable, Category = "Inventory")
+	FOnItemUsed OnItemUsed;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UTextBlock> Hunger_capacity;
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget), Category = "Inventory UI")
+	TObjectPtr<UTextBlock> Thirst_capacity;
 
 protected:
 	virtual void NativeOnInitialized() override;
 	virtual void NativeDestruct() override;
 
 private:
-	// Создаёт стандартный внешний вид, если Blueprint не построил свой Widget Tree.
-	void BuildWidgetTree();
-
 	// Полностью обновляет слоты после любого изменения содержимого рюкзака.
 	UFUNCTION()
 	void RefreshInventory();
 
 	UFUNCTION()
 	void HandleSlotSelected(int32 SlotIndex);
+
+	UFUNCTION()
+	void HandleUseClicked();
 
 	UFUNCTION()
 	void HandleDropClicked();
@@ -76,38 +110,30 @@ private:
 
 	void UpdateSelectionPanel();
 
+	UFUNCTION()
+	void HandleWeapSlingClicked();
+
+	UFUNCTION()
+	void HandleWeapSecondClicked();
+
 	UPROPERTY()
 	TObjectPtr<UInventoryComponent> Inventory;
-
-	UPROPERTY()
-	TObjectPtr<UUniformGridPanel> SlotGrid;
-
-	UPROPERTY()
-	TObjectPtr<UTextBlock> ItemNameText;
-
-	UPROPERTY()
-	TObjectPtr<UTextBlock> ItemQuantityText;
-
-	UPROPERTY()
-	TObjectPtr<UTextBlock> ItemDescriptionText;
-
-	UPROPERTY()
-	TObjectPtr<UTextBlock> CapacityText;
-
-	UPROPERTY()
-	TObjectPtr<UImage> PreviewImage;
-
-	UPROPERTY()
-	TObjectPtr<UTextBlock> PreviewFallback;
-
-	UPROPERTY()
-	TObjectPtr<UButton> DropOneButton;
-
-	UPROPERTY()
-	TObjectPtr<UButton> DropAllButton;
 
 	// Храним и номер стака, и Item Id: номер нужен для подсветки,
 	// а Item Id — для подсчёта и выбрасывания всех одинаковых предметов.
 	FName SelectedItemId = NAME_None;
 	int32 SelectedStackIndex = INDEX_NONE;
+
+	
+	UPROPERTY()
+	TObjectPtr<UNutritionComponent> NutritionComponent;
+
+	UFUNCTION()
+	void UpdateHungerText(float CurrentHunger, float MaxHunger);
+
+	UFUNCTION()
+	void UpdateThirstText(float CurrentThirst, float MaxThirst);
+	// В private:
+	FName EquippedWeaponSling = NAME_None;
+	FName EquippedWeaponSecondary = NAME_None;
 };

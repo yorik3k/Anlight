@@ -19,60 +19,53 @@ public class Anlight : ModuleRules
             "GameplayStateTreeModule",
             "UMG",
             "Slate",
-			"SlateCore",
-			// ← Убери пустую строку ""
-		});
+            "SlateCore"
+        });
 
         PrivateDependencyModuleNames.AddRange(new string[] { });
 
         // ============================================================
-        // ПУТИ ДЛЯ #include (чтобы компилятор видел все папки)
+        // ПУТИ ДЛЯ #include
         // ============================================================
         PublicIncludePaths.AddRange(new string[] {
-			// --- Корень модуля ---
-			"Anlight",
+            // --- Корень модуля ---
+            "Anlight",
 
-			// --- Core (глобальные классы) ---
-			"Anlight/Core",
+            // --- Core ---
+            "Anlight/Core",
 
-			// --- Character ---
-			"Anlight/Character",
+            // --- Character ---
+            "Anlight/Character",
+            "Anlight/Character/Movement",
 
-			// --- Components (наши новые компоненты) ---
-			"Anlight/Components",
+            // --- Components ---
+            "Anlight/Components",
             "Anlight/Components/Health",
             "Anlight/Components/Stamina",
-            "Anlight/Components/Radiation",
-            "Anlight/Components/BuffManager",
-            "Anlight/Components/BuffManager/Effects",
+            "Anlight/Components/EffectManager",
+            "Anlight/Components/Inventory",
+            "Anlight/Components/Jump",
+            "Anlight/Component/Nutrition",
 
-			// --- Items ---
-			"Anlight/Items",
-            "Anlight/Items/Consumables",
+            // --- Items ---
+            "Anlight/Items",
 
-			// --- World ---
-			"Anlight/World",
-            "Anlight/World/Zones",
+            // --- World ---
+            "Anlight/World",
+            "Anlight/World/Items",
 
-			// --- UI ---
-			"Anlight/UI",
-            "Anlight/UI/Widgets",
+            // --- UI ---
+            "Anlight/UI",
+            "Anlight/UI/Interaction",
+            "Anlight/UI/Inventory",
 
-			// --- Variants (оставляем как есть) ---
-			"Anlight/Variant_Horror",
+            // --- Variants ---
+            "Anlight/Variant_Horror",
             "Anlight/Variant_Horror/UI",
             "Anlight/Variant_Shooter",
             "Anlight/Variant_Shooter/AI",
             "Anlight/Variant_Shooter/UI",
-            "Anlight/Variant_Shooter/Weapons",
+            "Anlight/Variant_Shooter/Weapons"
         });
-
-        // Uncomment if you are using Slate UI
-        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
-
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
     }
 }

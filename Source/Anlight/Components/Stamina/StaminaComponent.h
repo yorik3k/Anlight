@@ -4,7 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "StaminaComponent.generated.h"
 
-class UBuffManager;
+class UEffectManager;  // <-- ÈÇÌÅÍÅÍÎ
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStaminaDepletedSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnStaminaChangedSignature, float, NewStamina, float, MaxStamina);
@@ -22,7 +22,6 @@ protected:
     virtual void BeginPlay() override;
     virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-    // ===== BASE =====
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
     float Stamina;
 
@@ -32,7 +31,6 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stamina")
     float CurrentMaxStamina;
 
-    // ===== REGEN =====
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|Regen")
     float StaminaRegenRate = 15.0f;
 
@@ -41,18 +39,15 @@ protected:
 
     float RegenDelayTimer = 0.0f;
 
-    // ===== DRAIN =====
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|Drain")
     float SprintDrainRate = 25.0f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stamina|Settings")
     float MinStaminaForSprint = 5.0f;
 
-    // ===== STATE =====
     bool bIsSprinting = false;
 
 public:
-    // ===== ÑÎÁÛÒÈß =====
     UPROPERTY(BlueprintAssignable, Category = "Stamina|Events")
     FOnStaminaChangedSignature OnStaminaChanged;
 
@@ -62,7 +57,6 @@ public:
     UPROPERTY(BlueprintAssignable, Category = "Stamina|Events")
     FOnMaxStaminaChangedSignature OnMaxStaminaChanged;
 
-    // ===== ÃÅÒÒÅÐÛ =====
     UFUNCTION(BlueprintCallable, Category = "Stamina")
     float GetStamina() const { return Stamina; }
 
@@ -78,24 +72,21 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Stamina")
     bool IsStaminaEmpty() const;
 
-    // ===== ÏÐÎÂÅÐÊÈ =====
     UFUNCTION(BlueprintCallable, Category = "Stamina")
     bool CanSprint() const;
 
-    // ===== ÓÏÐÀÂËÅÍÈÅ =====
     UFUNCTION(BlueprintCallable, Category = "Stamina")
     void UpdateStamina(float DeltaStamina);
 
     UFUNCTION(BlueprintCallable, Category = "Stamina")
     void SetIsSprinting(bool bInSprinting);
 
-    // ===== ÑÂßÇÜ Ñ BUFF MANAGER =====
     UFUNCTION(BlueprintCallable, Category = "Stamina")
-    void SetBuffManager(UBuffManager* InBuffManager);
+    void SetEffectManager(UEffectManager* InEffectManager);  // <-- ÈÇÌÅÍÅÍÎ
 
 private:
     UPROPERTY()
-    UBuffManager* BuffManager = nullptr;
+    UEffectManager* EffectManager = nullptr;  // <-- ÈÇÌÅÍÅÍÎ
 
     void UpdateStaminaUI();
     void RecalculateMaxStamina();

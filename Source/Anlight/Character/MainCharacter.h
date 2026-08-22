@@ -20,168 +20,174 @@ class UInventoryWidget;
 class UInteractionPromptWidget;
 class UInventoryItemDefinition;
 class AInventoryWorldItem;
-class UBuffManager;
+class UEffectManager;
+class UNutritionComponent;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathSignature);  // ← Добавляем
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathSignature);
 
 UCLASS()
 class ANLIGHT_API AMainCharacter : public ACharacter
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-	AMainCharacter();
+    AMainCharacter();
 
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
 
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-	void StartJump();
-	void StopJump();
+    void Move(const FInputActionValue& Value);
+    void Look(const FInputActionValue& Value);
+    void StartJump();
+    void StopJump();
 
 public:
-	virtual void Tick(float DeltaTime) override;
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+    virtual void Tick(float DeltaTime) override;
+    virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	// ===== КАМЕРА =====
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
-	USpringArmComponent* FP_CameraBoom;
+    // ===== КАМЕРА =====
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+    USpringArmComponent* FP_CameraBoom;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
-	UCameraComponent* FP_Camera;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
+    UCameraComponent* FP_Camera;
 
-	// ===== ЗДОРОВЬЕ =====
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
-	UHealthComponent* HealthComponent;
+    // ===== ДВИЖЕНИЕ =====
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
+    float BaseWalkSpeed = 600.0f;
 
-	// ===== СТАМИНА =====
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
-	UStaminaComponent* StaminaComponent;
+    // ===== ЗДОРОВЬЕ =====
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+    UHealthComponent* HealthComponent;
 
-	// ===== БЕГ =====
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-	USprintComponent* SprintComponent;
+    // ===== СТАМИНА =====
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+    UStaminaComponent* StaminaComponent;
 
-	// jump
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
-	UJumpComponent* JumpComponent;
+    // ===== БЕГ =====
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+    USprintComponent* SprintComponent;
 
-	// ===== ИНВЕНТАРЬ =====
-	// Сам компонент хранит предметы и стаки. Его можно увидеть в Blueprint персонажа.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	UInventoryComponent* InventoryComponent;
+    // jump
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+    UJumpComponent* JumpComponent;
 
-	// Классы интерфейса можно заменить в Class Defaults у BP_MainCharacter.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Interface")
-	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
+    // ===== ИНВЕНТАРЬ =====
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+    UInventoryComponent* InventoryComponent;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Interface")
-	TSubclassOf<UInteractionPromptWidget> InteractionPromptWidgetClass;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Interface")
+    TSubclassOf<UInventoryWidget> InventoryWidgetClass;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Interface")
-	TObjectPtr<UInventoryWidget> InventoryWidget;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Interface")
+    TSubclassOf<UInteractionPromptWidget> InteractionPromptWidgetClass;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Interface")
-	TObjectPtr<UInteractionPromptWidget> InteractionPromptWidget;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Interface")
+    TObjectPtr<UInventoryWidget> InventoryWidget;
 
-	// Как далеко персонаж видит предмет для подбора.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory|Interaction", meta = (ClampMin = "50.0"))
-	float InventoryInteractionDistance = 350.0f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory|Interface")
+    TObjectPtr<UInteractionPromptWidget> InteractionPromptWidget;
 
-	// Временно создаёт предмет перед игроком на обычной карте.
-	// После проверки это можно выключить в BP_MainCharacter без изменения кода.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Test")
-	bool bSpawnInventoryTestItem = false;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Inventory|Interaction", meta = (ClampMin = "50.0"))
+    float InventoryInteractionDistance = 350.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Test")
-	TObjectPtr<UInventoryItemDefinition> InventoryTestItemDefinition;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Test")
+    bool bSpawnInventoryTestItem = false;
 
-	// ===== ВВОД =====
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputMappingContext* DefaultMappingContext;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory|Test")
+    TObjectPtr<UInventoryItemDefinition> InventoryTestItemDefinition;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* WalkAction;
+    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI")
+    TSubclassOf<UUserWidget> HealthWidgetClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* MouseLookAction;
+    UPROPERTY()
+    UUserWidget* HealthWidget;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* JumpAction;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+    UNutritionComponent* NutritionComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* SprintAction;
+    // ===== ВВОД =====
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UInputMappingContext* DefaultMappingContext;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* InventoryAction;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UInputAction* WalkAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
-	UInputAction* InteractAction;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UInputAction* MouseLookAction;
 
-	void StartSprint();
-	void StopSprint();
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UInputAction* JumpAction;
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void ToggleInventory();
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UInputAction* SprintAction;
 
-	UFUNCTION(BlueprintCallable, Category = "Inventory|Interaction")
-	void PickUpFocusedItem();
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UInputAction* InventoryAction;
 
-	// ===== СМЕРТЬ =====
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")
+    UInputAction* InteractAction;
 
-	// Событие смерти (можно использовать в UI)
-	UPROPERTY(BlueprintAssignable, Category = "Health|Events")
-	FOnDeathSignature OnDeath;
+    void StartSprint();
+    void StopSprint();
 
-	// Флаг смерти
-	UPROPERTY(BlueprintReadOnly, Category = "Health")
-	bool bIsDead = false;
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void ToggleInventory();
 
-	// Вызов смерти
-	UFUNCTION(BlueprintCallable, Category = "Health")
-	void Die();
+    UFUNCTION(BlueprintCallable, Category = "Inventory|Interaction")
+    void PickUpFocusedItem();
 
-	// Buff Manager
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
-	UBuffManager* BuffManager;
+    // ===== СМЕРТЬ =====
+    UPROPERTY(BlueprintAssignable, Category = "Health|Events")
+    FOnDeathSignature OnDeath;
+
+    UPROPERTY(BlueprintReadOnly, Category = "Health")
+    bool bIsDead = false;
+
+    UFUNCTION(BlueprintCallable, Category = "Health")
+    void Die();
+
+    // Effect Manager
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
+    UEffectManager* EffectManager;
+
+    // use item
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void UseItem(FName ItemId);
 
 protected:
-	// Параметры анимации смерти
-	UPROPERTY(EditAnywhere, Category = "Death")
-	float DeathAnimDuration = 2.0f;
+    UPROPERTY(EditAnywhere, Category = "Death")
+    float DeathAnimDuration = 2.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Death")
-	float CameraDropHeight = 80.0f;
+    UPROPERTY(EditAnywhere, Category = "Death")
+    float CameraDropHeight = 80.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Death")
-	float CameraPitchTarget = -90.0f;
+    UPROPERTY(EditAnywhere, Category = "Death")
+    float CameraPitchTarget = -90.0f;
 
 private:
-	// Для плавной анимации
-	bool bIsDying = false;
-	float DeathTimer = 0.0f;
+    bool bIsDying = false;
+    float DeathTimer = 0.0f;
 
-	FVector InitialCameraLocation;
-	FRotator InitialCameraRotation;
-	FVector TargetCameraLocation;
-	FRotator TargetCameraRotation;
+    FVector InitialCameraLocation;
+    FRotator InitialCameraRotation;
+    FVector TargetCameraLocation;
+    FRotator TargetCameraRotation;
 
-	// Привязка к событию смерти из HealthComponent
-	UFUNCTION()
-	void OnHealthDepletedHandler();
+    UFUNCTION()
+    void OnHealthDepletedHandler();
 
-	void InitializeInventoryInterface();
-	void SetInventoryVisible(bool bVisible);
-	void UpdateInventoryFocus();
-	void ClearInventoryFocus();
-	void SpawnInventoryTestItem();
+    void InitializeInventoryInterface();
+    void SetInventoryVisible(bool bVisible);
+    void UpdateInventoryFocus();
+    void ClearInventoryFocus();
+    void SpawnInventoryTestItem();
 
-	UFUNCTION()
-	void HandleInventoryWidgetClosed();
+    UFUNCTION()
+    void HandleInventoryWidgetClosed();
 
-	UPROPERTY()
-	TObjectPtr<AInventoryWorldItem> FocusedInventoryItem;
+    UPROPERTY()
+    TObjectPtr<AInventoryWorldItem> FocusedInventoryItem;
 
-	bool bInventoryVisible = false;
+    bool bInventoryVisible = false;
 };

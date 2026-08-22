@@ -11,17 +11,33 @@ UInventoryComponent::UInventoryComponent()
 {
 	// Инвентарь меняется только по вызову функций, поэтому Tick ему не нужен.
 	PrimaryComponentTick.bCanEverTick = false;
+
+	// Создаём дефолтный контейнер — рюкзак 6x5
+	if (Containers.IsEmpty())
+	{
+		FContainerData Backpack;
+		Backpack.ContainerId = FName(TEXT("Backpack"));
+		Backpack.DisplayName = FText::FromString(TEXT("Рюкзак"));
+		Backpack.Width = 6;
+		Backpack.Height = 5;
+		Containers.Add(Backpack);
+	}
+}
+
+void UInventoryComponent::BeginPlay()
+{
+	Super::BeginPlay();
 }
 
 int32 UInventoryComponent::AddItem(const FName ItemId, const int32 Quantity,
-	const int32 MaxStackSize, const TSubclassOf<AInventoryWorldItem> WorldItemClass)
+	const int32 MaxStackSize, const TSubclassOf<AInventoryWorldItem> WorldItemClass,
+	const int32 ItemWidth, const int32 ItemHeight)
 {
-	return AddItemInternal(ItemId, Quantity, MaxStackSize, WorldItemClass, nullptr);
+	return AddItemInternal(ItemId, Quantity, MaxStackSize, WorldItemClass, nullptr, ItemWidth, ItemHeight);
 }
 
 int32 UInventoryComponent::AddItemDefinition(UInventoryItemDefinition* ItemDefinition, const int32 Quantity)
 {
-	// Предмет без Data Asset или без уникального Item Id нельзя надёжно хранить.
 	if (!ItemDefinition || ItemDefinition->ItemId.IsNone())
 	{
 		return 0;
@@ -32,12 +48,14 @@ int32 UInventoryComponent::AddItemDefinition(UInventoryItemDefinition* ItemDefin
 		Quantity,
 		ItemDefinition->MaxStackSize,
 		ItemDefinition->WorldItemClass,
-		ItemDefinition);
+		ItemDefinition,
+		ItemDefinition->Width,
+		ItemDefinition->Height);
 }
 
 int32 UInventoryComponent::AddItemInternal(const FName ItemId, const int32 Quantity,
 	const int32 MaxStackSize, const TSubclassOf<AInventoryWorldItem> WorldItemClass,
-	UInventoryItemDefinition* ItemDefinition)
+	UInventoryItemDefinition* ItemDefinition, const int32 ItemWidth, const int32 ItemHeight)
 {
 	if (ItemId.IsNone() || Quantity <= 0)
 	{
@@ -45,6 +63,8 @@ int32 UInventoryComponent::AddItemInternal(const FName ItemId, const int32 Quant
 	}
 
 	const int32 SafeMaxStackSize = FMath::Max(1, MaxStackSize);
+	const int32 SafeWidth = FMath::Max(1, ItemWidth);
+	const int32 SafeHeight = FMath::Max(1, ItemHeight);
 	int32 Remaining = Quantity;
 
 	// Сначала заполняем уже существующие неполные стаки этого предмета.
@@ -59,8 +79,7 @@ int32 UInventoryComponent::AddItemInternal(const FName ItemId, const int32 Quant
 		Stack.Quantity += AddedToStack;
 		Remaining -= AddedToStack;
 
-		// Старый стак мог быть создан без Data Asset. Если появились дополнительные
-		// данные, сохраняем их, чтобы предмет правильно отображался и выбрасывался.
+		// Дополняем данные, если старый стак был создан без них
 		if (!Stack.WorldItemClass && WorldItemClass)
 		{
 			Stack.WorldItemClass = WorldItemClass;
@@ -76,15 +95,31 @@ int32 UInventoryComponent::AddItemInternal(const FName ItemId, const int32 Quant
 		}
 	}
 
-	// Остаток раскладываем по новым стакам, пока есть свободные слоты.
-	while (Remaining > 0 && (MaxSlots == 0 || ItemStacks.Num() < MaxSlots))
+	// Остаток раскладываем по новым стакам
+	while (Remaining > 0)
 	{
-		FInventoryItemStack& NewStack = ItemStacks.AddDefaulted_GetRef();
+		FInventoryItemStack NewStack;
 		NewStack.ItemId = ItemId;
 		NewStack.MaxStackSize = SafeMaxStackSize;
 		NewStack.Quantity = FMath::Min(Remaining, SafeMaxStackSize);
 		NewStack.WorldItemClass = WorldItemClass;
 		NewStack.Definition = ItemDefinition;
+		NewStack.Width = SafeWidth;
+		NewStack.Height = SafeHeight;
+
+		// Ищем свободное место в сетке
+		int32 ContainerIdx, PosX, PosY;
+		if (!FindFreeSpace(NewStack, ContainerIdx, PosX, PosY))
+		{
+			// Нет места — прекращаем добавление
+			break;
+		}
+
+		NewStack.ContainerIndex = ContainerIdx;
+		NewStack.PositionX = PosX;
+		NewStack.PositionY = PosY;
+
+		ItemStacks.Add(NewStack);
 		Remaining -= NewStack.Quantity;
 	}
 
@@ -106,7 +141,7 @@ int32 UInventoryComponent::RemoveItem(const FName ItemId, const int32 Quantity)
 	}
 
 	int32 Remaining = Quantity;
-	// Идём с конца, чтобы удаление пустого стака не сбивало ещё не проверенные индексы.
+	// Идём с конца, чтобы удаление пустого стака не сбивало индексы.
 	for (int32 Index = ItemStacks.Num() - 1; Index >= 0 && Remaining > 0; --Index)
 	{
 		FInventoryItemStack& Stack = ItemStacks[Index];
@@ -148,6 +183,106 @@ int32 UInventoryComponent::GetItemCount(const FName ItemId) const
 	return Total;
 }
 
+bool UInventoryComponent::CanPlaceItem(const FInventoryItemStack& Item,
+	const int32 ContainerIndex, const int32 PosX, const int32 PosY) const
+{
+	// Проверяем, что контейнер существует
+	if (!Containers.IsValidIndex(ContainerIndex))
+	{
+		return false;
+	}
+
+	const FContainerData& Container = Containers[ContainerIndex];
+
+	// Проверяем границы: позиция не отрицательная и предмет не выходит за пределы
+	if (PosX < 0 || PosY < 0 ||
+		PosX + Item.Width > Container.Width ||
+		PosY + Item.Height > Container.Height)
+	{
+		return false;
+	}
+
+	// Проверяем пересечение с другими предметами
+	for (const FInventoryItemStack& Other : ItemStacks)
+	{
+		// Пропускаем предметы из других контейнеров или неразмещённые
+		if (Other.ContainerIndex != ContainerIndex ||
+			Other.PositionX < 0 || Other.PositionY < 0)
+		{
+			continue;
+		}
+
+		// Проверяем пересечение прямоугольников
+		// Если хотя бы одно условие истинно — прямоугольники НЕ пересекаются
+		const bool bNoOverlap =
+			PosX + Item.Width <= Other.PositionX ||      // Новый левее существующего
+			Other.PositionX + Other.Width <= PosX ||      // Новый правее существующего
+			PosY + Item.Height <= Other.PositionY ||      // Новый выше существующего
+			Other.PositionY + Other.Height <= PosY;       // Новый ниже существующего
+
+		if (!bNoOverlap)
+		{
+			// Прямоугольники пересекаются — место занято
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool UInventoryComponent::FindFreeSpace(const FInventoryItemStack& Item,
+	int32& OutContainerIndex, int32& OutPosX, int32& OutPosY) const
+{
+	// Перебираем все контейнеры
+	for (int32 ContainerIdx = 0; ContainerIdx < Containers.Num(); ++ContainerIdx)
+	{
+		const FContainerData& Container = Containers[ContainerIdx];
+
+		// Перебираем все возможные позиции
+		// От 0 до (Container.Height - Item.Height) — чтобы предмет не выходил за границы
+		for (int32 Y = 0; Y <= Container.Height - Item.Height; ++Y)
+		{
+			for (int32 X = 0; X <= Container.Width - Item.Width; ++X)
+			{
+				if (CanPlaceItem(Item, ContainerIdx, X, Y))
+				{
+					OutContainerIndex = ContainerIdx;
+					OutPosX = X;
+					OutPosY = Y;
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool UInventoryComponent::MoveItem(const int32 StackIndex,
+	const int32 NewContainerIndex, const int32 NewPosX, const int32 NewPosY)
+{
+	if (!ItemStacks.IsValidIndex(StackIndex))
+	{
+		return false;
+	}
+
+	FInventoryItemStack& Item = ItemStacks[StackIndex];
+
+	// Проверяем, можно ли разместить в новой позиции
+	if (!CanPlaceItem(Item, NewContainerIndex, NewPosX, NewPosY))
+	{
+		return false;
+	}
+
+	// Перемещаем
+	Item.ContainerIndex = NewContainerIndex;
+	Item.PositionX = NewPosX;
+	Item.PositionY = NewPosY;
+
+	OnInventoryChanged.Broadcast();
+	return true;
+}
+
 bool UInventoryComponent::DropItem(const FName ItemId, const int32 Quantity, const float ForwardDistance)
 {
 	// Сначала убеждаемся, что предметы есть и что владелец находится в игровом мире.
@@ -157,7 +292,6 @@ bool UInventoryComponent::DropItem(const FName ItemId, const int32 Quantity, con
 	}
 
 	// Берём класс мира и Data Asset из первого подходящего стака.
-	// Если класс не настроен, используется обычный AInventoryWorldItem.
 	TSubclassOf<AInventoryWorldItem> DropClass = AInventoryWorldItem::StaticClass();
 	UInventoryItemDefinition* Definition = nullptr;
 	int32 MaxStackSize = Quantity;
